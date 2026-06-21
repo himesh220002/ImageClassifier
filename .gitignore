@@ -5,6 +5,8 @@ data/
 *.pt
 *.pth
 *.h5
+!models/saved/*.pth
+!models/saved/*.json
 
 # Python Virtual Environments
 venv/

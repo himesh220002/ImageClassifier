@@ -34,7 +34,10 @@ with tab1:
         data_dir = "data/raw/ecommerce"
         
     st.info(f"Target Directory: `{data_dir}`")
-    if st.button("Load Dataset & Visualize Batch"):
+    
+    if not os.path.exists(data_dir):
+        st.warning(f"⚠️ **Cloud/Inference Mode Detected:** The training dataset (`{data_dir}`) is missing. This happens when the app is deployed on the cloud because the 1.1GB dataset is too large for GitHub. You can still use the **Model Inference** tab!")
+    elif st.button("Load Dataset & Visualize Batch"):
         from src.image_classifier.data_loading import get_dataloaders  # type: ignore
         from src.image_classifier.data_loading.transforms import get_inverse_transforms  # type: ignore
         import torch  # type: ignore
@@ -81,7 +84,9 @@ with tab2:
         loss_fn = st.selectbox("Loss Function", ["cross_entropy", "focal_loss"], index=0)
         model_save_name = st.text_input("Model Save Name", value="custom_model")
     
-    if st.button("🚀 Start Training Run"):
+    if not os.path.exists(data_dir):
+        st.warning("⚠️ **Cloud/Inference Mode Detected:** Cannot start training because the local dataset is not present in this environment. Training must be run locally on your machine.")
+    elif st.button("🚀 Start Training Run"):
         from src.image_classifier.models.resnet import build_resnet50  # type: ignore
         from src.image_classifier.models.efficientnet import build_efficientnet # type: ignore
         from src.image_classifier.training.engine import train_model  # type: ignore
