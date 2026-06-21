@@ -1,0 +1,18 @@
+# Dataset Images and Data (DO NOT COMMIT)
+data/
+
+# Model Weights
+*.pt
+*.pth
+*.h5
+
+# Python Virtual Environments
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local Configs
+.streamlit/secrets.toml
