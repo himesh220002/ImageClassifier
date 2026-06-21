@@ -6,8 +6,8 @@ from image_classifier.models.resnet import build_resnet50 # type: ignore
 from image_classifier.models.efficientnet import build_efficientnet # type: ignore
 from image_classifier.models.vgg import build_vgg16 # type: ignore
 from image_classifier.training.losses import FocalLoss # type: ignore
-from image_classifier.data_loading.transforms import get_training_transforms, get_validation_transforms # type: ignore
-from image_classifier.inference.predict import predict_image # type: ignore
+from image_classifier.data_loading.transforms import ImageProcessor # type: ignore
+from image_classifier.inference.predict import InferenceEngine # type: ignore
 from utils.metrics import get_predictions # type: ignore
 
 def test_model_build_resnet():
@@ -34,8 +34,9 @@ def test_focal_loss():
     assert loss.item() > 0
 
 def test_transforms_exist():
-    train_transforms = get_training_transforms()
-    val_transforms = get_validation_transforms()
+    processor = ImageProcessor()
+    train_transforms = processor.get_training_transforms()
+    val_transforms = processor.get_validation_transforms()
     assert train_transforms is not None
     assert val_transforms is not None
 
@@ -50,10 +51,12 @@ def test_inference_predict_image():
     img.save(img_byte_arr, format='JPEG')
     img_bytes = img_byte_arr.getvalue()
     
-    val_transforms = get_validation_transforms()
+    processor = ImageProcessor()
+    val_transforms = processor.get_validation_transforms()
     classes = ["Cat", "Elephant"]
     
-    pred_class, conf = predict_image(img_bytes, model, val_transforms, classes=classes, device="cpu")
+    inference_engine = InferenceEngine(model=model, transforms=val_transforms, classes=classes, device="cpu")
+    pred_class, conf = inference_engine.predict(img_bytes)
     
     assert pred_class in classes
     assert 0.0 <= conf <= 100.0

@@ -49,7 +49,7 @@ else:
 
         if st.button("Load Dataset & Visualize Batch"):
             from src.image_classifier.data_loading import get_dataloaders  # type: ignore
-            from src.image_classifier.data_loading.transforms import get_inverse_transforms  # type: ignore
+            from src.image_classifier.data_loading.transforms import ImageProcessor  # type: ignore
             import torch  # type: ignore
 
             try:
@@ -61,7 +61,8 @@ else:
                     images, labels = next(iter(train_loader))
 
                     st.subheader("Training Batch Preview (Augmented)")
-                    inv_trans = get_inverse_transforms()
+                    processor = ImageProcessor()
+                    inv_trans = processor.get_inverse_transforms()
 
                     cols = st.columns(4)
                     for idx, (img_tensor, label_idx) in enumerate(zip(images[:8], labels[:8])):
@@ -97,8 +98,10 @@ else:
         if st.button("🚀 Start Training Run"):
             from src.image_classifier.models.resnet import build_resnet50  # type: ignore
             from src.image_classifier.models.efficientnet import build_efficientnet # type: ignore
-            from src.image_classifier.training.engine import train_model  # type: ignore
+            from src.image_classifier.training.engine import Trainer  # type: ignore
             from src.image_classifier.data_loading import get_dataloaders  # type: ignore
+            import torch.optim as optim # type: ignore
+            import torch.nn as nn # type: ignore
 
             try:
                 with st.spinner("Preparing model and dataloaders..."):
@@ -122,15 +125,26 @@ else:
                     status_text.markdown(f"**Epoch {epoch} Metrics:** Train Loss: `{t_loss:.4f}` | Val Loss: `{v_loss:.4f}` | Time: `{duration:.1f}s`")
 
                 with st.spinner("Training in progress..."):
-                    history = train_model(
+                    if loss_fn == "focal_loss":
+                        from src.image_classifier.training.losses import FocalLoss # type: ignore
+                        criterion = FocalLoss()
+                    else:
+                        criterion = nn.CrossEntropyLoss()
+                        
+                    optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=learning_rate)
+                    
+                    trainer = Trainer(
                         model=model,
+                        criterion=criterion,
+                        optimizer=optimizer,
+                        device=device_opt,
+                        patience=patience
+                    )
+                    
+                    history = trainer.train(
                         train_loader=train_loader,
                         val_loader=val_loader,
                         num_epochs=num_epochs,
-                        device=device_opt,
-                        learning_rate=learning_rate,
-                        patience=patience,
-                        loss_function=loss_fn,
                         epoch_callback=update_ui
                     )
 
@@ -204,15 +218,16 @@ with inference_container:
         model_choice = st.selectbox("Select Model for Inference", ["Base ImageNet"] + saved_models)
         
         if uploaded_file is not None:
-            from src.image_classifier.inference import predict_image  # type: ignore
+            from src.image_classifier.inference.predict import InferenceEngine  # type: ignore
             from src.image_classifier.models.resnet import build_resnet50  # type: ignore
-            from src.image_classifier.data_loading.transforms import get_validation_transforms  # type: ignore
+            from src.image_classifier.data_loading.transforms import ImageProcessor  # type: ignore
             import torch  # type: ignore
             
             with st.spinner("Running Inference Pipeline..."):
                 try:
                     import os, json
-                    val_transforms = get_validation_transforms()
+                    processor = ImageProcessor()
+                    val_transforms = processor.get_validation_transforms()
                     
                     # Check if custom trained model exists
                     model_path = os.path.join(save_dir, f"{model_choice}.pth")
@@ -250,7 +265,8 @@ with inference_container:
                     image_bytes = uploaded_file.getvalue()
                     
                     # Run inference
-                    pred_class, conf = predict_image(image_bytes, model, val_transforms, classes=classes, device="cpu")
+                    inference_engine = InferenceEngine(model=model, transforms=val_transforms, classes=classes, device="cpu")
+                    pred_class, conf = inference_engine.predict(image_bytes)
                     
                     # Update monitoring metric
                     st.session_state.total_inferences += 1

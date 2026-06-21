@@ -3,7 +3,7 @@ import torch  # type: ignore
 from torchvision import datasets  # type: ignore
 from torch.utils.data import DataLoader, Dataset  # type: ignore
 from typing import Tuple, Optional, Dict
-from .transforms import get_training_transforms, get_validation_transforms  # type: ignore
+from .transforms import ImageProcessor  # type: ignore
 
 class ImageClassifierDataset:
     """
@@ -36,8 +36,9 @@ class ImageClassifierDataset:
         if not os.path.exists(self.val_dir):
             raise FileNotFoundError(f"Validation directory not found at {self.val_dir}")
 
-        train_transforms = get_training_transforms(self.image_size)
-        val_transforms = get_validation_transforms(self.image_size)
+        processor = ImageProcessor(self.image_size)
+        train_transforms = processor.get_training_transforms()
+        val_transforms = processor.get_validation_transforms()
 
         self.train_dataset = datasets.ImageFolder(self.train_dir, transform=train_transforms)
         self.val_dataset = datasets.ImageFolder(self.val_dir, transform=val_transforms)

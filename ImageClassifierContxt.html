@@ -513,6 +513,39 @@
         </div>
 
         <div class="card">
+            <h2>🏗️ Codebase Architecture & Community Hubs</h2>
+            <p>Our codebase architecture is thoroughly analyzed using Graphify's Knowledge Graph extraction. The graph mapped out 96 core nodes and identified exactly 14 tightly coupled code "communities" within the repository.</p>
+            
+            <h3 style="color: var(--accent-color); margin-top: 1.5rem;">🔗 Architectural Breakdown (The 14 Communities)</h3>
+            <p>Rather than a monolithic procedural structure, the codebase is strictly segregated into Object-Oriented domains:</p>
+            <ul>
+                <li><strong>Data Loading (Community 0):</strong> Manages the ImageFolder wrappers and standard DataLoaders via <code>dataset.py</code>.</li>
+                <li><strong>Models (Community 1):</strong> Houses the ResNet, EfficientNet, and VGG neural builders.</li>
+                <li><strong>Training Engine (Community 2):</strong> Home to the primary <code>Trainer</code> class, optimizing loop, and AMP scaling.</li>
+                <li><strong>Inference (Community 4):</strong> Home to the <code>InferenceEngine</code> that handles dynamic inference requests.</li>
+                <li><strong>And 10 additional utility/testing communities</strong> ensuring complete modular separation of concerns.</li>
+            </ul>
+
+            <h3 style="color: var(--accent-color); margin-top: 1.5rem;">🛠️ Decoupled "God Nodes" via OOP</h3>
+            <p>Initial graph analysis discovered highly centralized procedural functions ("God Nodes") that bridged too many communities simultaneously. To guarantee future scalability and readability, these were systematically refactored into clean Object-Oriented classes:</p>
+            
+            <div class="domain-grid">
+                <div class="domain-card">
+                    <h3>Trainer Class</h3>
+                    <p>Replaced the procedural <code>train_model()</code>. Loss definitions (like Focal Loss) are now passed via dependency injection, completely decoupling the training engine from the loss module.</p>
+                </div>
+                <div class="domain-card">
+                    <h3>InferenceEngine Class</h3>
+                    <p>Replaced the procedural <code>predict_image()</code>. By encapsulating model states, ImageNet class fallbacks, and transformations, the Streamlit app only instantiates the engine once instead of on every frame.</p>
+                </div>
+                <div class="domain-card">
+                    <h3>ImageProcessor Class</h3>
+                    <p>Replaced global procedural transforms. The pipeline explicitly handles Normalization parameters via object variables, preventing ImageNet hardcoding from polluting the global scope.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
             <h2>1️⃣4️⃣ Progress & Changelog Tracking</h2>
             <p>This section will track our development progress, features added, and requirement statuses using tags for
                 each step.</p>

@@ -1,0 +1,257 @@
+{
+  "communities": {
+    "0": [
+      "compose",
+      "data_loading_dataset",
+      "data_loading_dataset_get_dataloaders",
+      "data_loading_dataset_imageclassifierdataset",
+      "data_loading_dataset_imageclassifierdataset_get_dataloaders",
+      "data_loading_dataset_imageclassifierdataset_init",
+      "data_loading_dataset_imageclassifierdataset_setup",
+      "data_loading_dataset_rationale_33",
+      "data_loading_dataset_rationale_49",
+      "data_loading_dataset_rationale_79",
+      "data_loading_dataset_rationale_9",
+      "data_loading_init",
+      "data_loading_transforms",
+      "data_loading_transforms_get_inverse_transforms",
+      "data_loading_transforms_get_training_transforms",
+      "data_loading_transforms_get_validation_transforms",
+      "data_loading_transforms_rationale_19",
+      "data_loading_transforms_rationale_34",
+      "data_loading_transforms_rationale_4",
+      "dataloader",
+      "unit_test_image_classifier_test_transforms_exist"
+    ],
+    "1": [
+      "app",
+      "app_update_ui",
+      "models_init",
+      "models_resnet",
+      "models_resnet_build_resnet50",
+      "models_resnet_rationale_6",
+      "src_image_classifier_models_resnet_py_module",
+      "src_utils_metrics_py_module",
+      "unit_test_image_classifier",
+      "unit_test_image_classifier_test_focal_loss",
+      "unit_test_image_classifier_test_metrics_get_predictions",
+      "unit_test_image_classifier_test_model_build_resnet",
+      "utils_metrics",
+      "utils_metrics_generate_classification_report",
+      "utils_metrics_get_predictions",
+      "utils_metrics_plot_confusion_matrix",
+      "utils_metrics_rationale_11",
+      "utils_metrics_rationale_25",
+      "utils_metrics_rationale_42"
+    ],
+    "2": [
+      "any",
+      "src_image_classifier_training_engine_py_module",
+      "tensor",
+      "training_engine",
+      "training_engine_evaluate",
+      "training_engine_rationale_62",
+      "training_engine_train_model",
+      "training_engine_train_one_epoch",
+      "training_init",
+      "training_losses",
+      "training_losses_focalloss",
+      "training_losses_focalloss_forward",
+      "training_losses_focalloss_init",
+      "training_losses_rationale_6"
+    ],
+    "3": [
+      "imageclassifiercontxt_backpropagation_optimization",
+      "imageclassifiercontxt_classification_head",
+      "imageclassifiercontxt_data_augmentation",
+      "imageclassifiercontxt_efficientnet",
+      "imageclassifiercontxt_feature_extraction",
+      "imageclassifiercontxt_loss_calculation",
+      "imageclassifiercontxt_raw_image_loader",
+      "imageclassifiercontxt_resizing_normalization",
+      "imageclassifiercontxt_resnet50",
+      "imageclassifiercontxt_softmax_argmax",
+      "imageclassifiercontxt_vgg16",
+      "requirements_pytorch",
+      "requirements_torchvision"
+    ],
+    "4": [
+      "inference_init",
+      "inference_predict",
+      "inference_predict_get_imagenet_classes",
+      "inference_predict_predict_image",
+      "inference_predict_rationale_16",
+      "inference_predict_rationale_8",
+      "src_image_classifier_inference_predict_py_module",
+      "unit_test_image_classifier_test_inference_predict_image"
+    ],
+    "5": [
+      "models_efficientnet",
+      "models_efficientnet_build_efficientnet",
+      "models_efficientnet_rationale_6",
+      "src_image_classifier_models_efficientnet_py_module",
+      "unit_test_image_classifier_test_model_build_efficientnet"
+    ],
+    "6": [
+      "models_vgg",
+      "models_vgg_build_vgg16",
+      "models_vgg_rationale_6",
+      "src_image_classifier_models_vgg_py_module",
+      "unit_test_image_classifier_test_model_build_vgg16"
+    ],
+    "7": [
+      "app_py",
+      "requirements_streamlit"
+    ],
+    "8": [
+      "data_prep_split_brain_scans",
+      "data_prep_split_brain_scans_split_brain_scans"
+    ],
+    "9": [
+      "data_prep_split_ecommerce",
+      "data_prep_split_ecommerce_split_ecommerce"
+    ],
+    "10": [
+      "home_himesh_myprojects_aiml_imageclassifier_run_tests_sh__entry",
+      "run_tests"
+    ],
+    "11": [
+      "fix_app"
+    ],
+    "12": [
+      "image_classifier_init"
+    ],
+    "13": [
+      "imageclassifiercontxt_image_classifier_architecture"
+    ]
+  },
+  "cohesion": {
+    "0": 0.16666666666666666,
+    "1": 0.14035087719298245,
+    "2": 0.25274725274725274,
+    "3": 0.15384615384615385,
+    "4": 0.35714285714285715,
+    "5": 0.4,
+    "6": 0.4,
+    "7": 1.0,
+    "8": 1.0,
+    "9": 1.0,
+    "10": 1.0,
+    "11": 1.0,
+    "12": 1.0,
+    "13": 1.0
+  },
+  "gods": [
+    {
+      "id": "data_loading_transforms_get_validation_transforms",
+      "label": "get_validation_transforms()",
+      "degree": 9
+    },
+    {
+      "id": "training_engine_train_model",
+      "label": "train_model()",
+      "degree": 9
+    },
+    {
+      "id": "training_losses_focalloss",
+      "label": "FocalLoss",
+      "degree": 9
+    },
+    {
+      "id": "data_loading_dataset_imageclassifierdataset",
+      "label": "ImageClassifierDataset",
+      "degree": 7
+    },
+    {
+      "id": "data_loading_transforms_get_training_transforms",
+      "label": "get_training_transforms()",
+      "degree": 7
+    },
+    {
+      "id": "inference_predict_predict_image",
+      "label": "predict_image()",
+      "degree": 7
+    },
+    {
+      "id": "models_resnet_build_resnet50",
+      "label": "build_resnet50()",
+      "degree": 7
+    },
+    {
+      "id": "data_loading_dataset_get_dataloaders",
+      "label": "get_dataloaders()",
+      "degree": 6
+    },
+    {
+      "id": "models_efficientnet_build_efficientnet",
+      "label": "build_efficientnet()",
+      "degree": 6
+    },
+    {
+      "id": "imageclassifiercontxt_feature_extraction",
+      "label": "Feature Extraction",
+      "degree": 6
+    }
+  ],
+  "surprises": [
+    {
+      "source": "test_focal_loss()",
+      "target": "FocalLoss",
+      "source_files": [
+        "tests/unit/test_image_classifier.py",
+        "src/image_classifier/training/losses.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities; peripheral node `test_focal_loss()` unexpectedly reaches hub `FocalLoss`"
+    },
+    {
+      "source": "test_inference_predict_image()",
+      "target": "get_validation_transforms()",
+      "source_files": [
+        "tests/unit/test_image_classifier.py",
+        "src/image_classifier/data_loading/transforms.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "test_inference_predict_image()",
+      "target": "build_efficientnet()",
+      "source_files": [
+        "tests/unit/test_image_classifier.py",
+        "src/image_classifier/models/efficientnet.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "test_model_build_efficientnet()",
+      "target": "build_efficientnet()",
+      "source_files": [
+        "tests/unit/test_image_classifier.py",
+        "src/image_classifier/models/efficientnet.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; peripheral node `test_model_build_efficientnet()` unexpectedly reaches hub `build_efficientnet()`"
+    },
+    {
+      "source": "test_model_build_resnet()",
+      "target": "build_resnet50()",
+      "source_files": [
+        "tests/unit/test_image_classifier.py",
+        "src/image_classifier/models/resnet.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; peripheral node `test_model_build_resnet()` unexpectedly reaches hub `build_resnet50()`"
+    }
+  ],
+  "tokens": {
+    "input": 5942,
+    "output": 2850
+  }
+}
