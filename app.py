@@ -2,8 +2,9 @@ import streamlit as st
 import os
 import sys
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Ensure imports work from the root directory
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
+sys.path.append(os.path.join(BASE_DIR, 'src'))
 
 st.set_page_config(page_title="Image Classifier", layout="wide")
 
@@ -21,158 +22,166 @@ with st.expander("📖 System Context & Architecture"):
     """)
 
 # --- Main Dashboard ---
-tab1, tab2, tab3 = st.tabs(["📂 Data Ingestion", "⚙️ Model Training", "🧠 Model Inference"])
+is_cloud_mode = not os.path.exists(os.path.join(BASE_DIR, "data", "raw"))
 
-with tab1:
-    st.header("Data Ingestion & Augmentation")
-    st.markdown("Point the pipeline to a local directory structured with `train` and `val` folders containing class subfolders.")
-    
-    dataset_choice = st.selectbox("Select Target Dataset", ["Brain Scans (Medical)", "E-Commerce Fashion (Retail)"])
-    if dataset_choice == "Brain Scans (Medical)":
-        data_dir = "data/raw/brain_scans"
-    else:
-        data_dir = "data/raw/ecommerce"
-        
-    st.info(f"Target Directory: `{data_dir}`")
-    
-    if not os.path.exists(data_dir):
-        st.warning(f"⚠️ **Cloud/Inference Mode Detected:** The training dataset (`{data_dir}`) is missing. This happens when the app is deployed on the cloud because the 1.1GB dataset is too large for GitHub. You can still use the **Model Inference** tab!")
-    elif st.button("Load Dataset & Visualize Batch"):
-        from src.image_classifier.data_loading import get_dataloaders  # type: ignore
-        from src.image_classifier.data_loading.transforms import get_inverse_transforms  # type: ignore
-        import torch  # type: ignore
-        
-        try:
-            with st.spinner("Setting up PyTorch DataLoaders..."):
-                train_loader, val_loader, classes = get_dataloaders(data_dir, batch_size=8, num_workers=0)
-                st.success(f"Successfully loaded dataset with {len(classes)} classes: {', '.join(classes)}")
-                
-                # Fetch a single batch
-                images, labels = next(iter(train_loader))
-                
-                st.subheader("Training Batch Preview (Augmented)")
-                inv_trans = get_inverse_transforms()
-                
-                cols = st.columns(4)
-                for idx, (img_tensor, label_idx) in enumerate(zip(images[:8], labels[:8])):
-                    col = cols[idx % 4]
-                    try:
-                        # Un-normalize the tensor for viewing
-                        display_img = inv_trans(img_tensor)
-                        col.image(display_img, caption=f"Class: {classes[label_idx]}", use_container_width=True)
-                    except Exception as e:
-                        col.error(f"Error viewing image: {e}")
-                        
-        except FileNotFoundError as e:
-            st.error(f"Directory Error: {e}. Please ensure the path exists and contains 'train' and 'val' subdirectories.")
-        except Exception as e:
-            st.error(f"Failed to load dataset: {e}")
+if is_cloud_mode:
+    st.success("☁️ **Cloud Inference Mode Active**: Model training is disabled on the cloud. Running global inference on pre-trained custom models.")
+    st.markdown("### 🔄 MLOps Workflow")
+    st.info("🖥️ **Local Data Ingestion & Training** ➡️ 📦 **Save `.pth` Model** ➡️ ☁️ **Deploy to Streamlit Cloud for Global Inference**")
+    st.divider()
+    inference_container = st.container()
+else:
+    tab1, tab2, tab3 = st.tabs(["📂 Data Ingestion", "⚙️ Model Training", "🧠 Model Inference"])
+    inference_container = tab3
 
-with tab2:
-    st.header("Model Training Pipeline")
-    st.markdown("Kick off a training run using Transfer Learning on a pre-trained ResNet50.")
-    
-    col_t1, col_t2 = st.columns(2)
-    with col_t1:
-        num_epochs = st.number_input("Number of Epochs", min_value=1, max_value=50, value=1)
-        learning_rate = st.selectbox("Learning Rate", [0.001, 0.0001, 0.00001], index=0)
-        patience = st.number_input("Early Stopping Patience", min_value=1, max_value=10, value=3)
-    
-    with col_t2:
-        device_opt = st.radio("Compute Device", ["cpu", "cuda"])
-        model_arch = st.selectbox("Model Architecture", ["ResNet50", "EfficientNet-B0", "VGG16"], index=0)
-        loss_fn = st.selectbox("Loss Function", ["cross_entropy", "focal_loss"], index=0)
-        model_save_name = st.text_input("Model Save Name", value="custom_model")
-    
-    if not os.path.exists(data_dir):
-        st.warning("⚠️ **Cloud/Inference Mode Detected:** Cannot start training because the local dataset is not present in this environment. Training must be run locally on your machine.")
-    elif st.button("🚀 Start Training Run"):
-        from src.image_classifier.models.resnet import build_resnet50  # type: ignore
-        from src.image_classifier.models.efficientnet import build_efficientnet # type: ignore
-        from src.image_classifier.training.engine import train_model  # type: ignore
-        from src.image_classifier.data_loading import get_dataloaders  # type: ignore
-        
-        try:
-            with st.spinner("Preparing model and dataloaders..."):
-                train_loader, val_loader, classes = get_dataloaders(data_dir, batch_size=8, num_workers=0)
-                
-                if model_arch == "ResNet50":
-                    model = build_resnet50(num_classes=len(classes), pretrained=True, freeze_backbone=True)
-                elif model_arch == "VGG16":
-                    from src.image_classifier.models.vgg import build_vgg16 # type: ignore
-                    model = build_vgg16(num_classes=len(classes), pretrained=True, freeze_backbone=True)
-                else:
-                    model = build_efficientnet(num_classes=len(classes), pretrained=True, freeze_backbone=True)
-                
-            st.info(f"Starting training on {device_opt} for {num_epochs} epochs...")
-            
-            progress_bar = st.progress(0, text="Initializing training...")
-            status_text = st.empty()
-            
-            def update_ui(epoch, total_epochs, t_loss, v_loss, duration):
-                progress_bar.progress(epoch / total_epochs, text=f"Epoch {epoch}/{total_epochs} Complete")
-                status_text.markdown(f"**Epoch {epoch} Metrics:** Train Loss: `{t_loss:.4f}` | Val Loss: `{v_loss:.4f}` | Time: `{duration:.1f}s`")
+    with tab1:
 
-            with st.spinner("Training in progress..."):
-                history = train_model(
-                    model=model,
-                    train_loader=train_loader,
-                    val_loader=val_loader,
-                    num_epochs=num_epochs,
-                    device=device_opt,
-                    learning_rate=learning_rate,
-                    patience=patience,
-                    loss_function=loss_fn,
-                    epoch_callback=update_ui
-                )
-            
-            with st.spinner("Saving model weights..."):
-                import os, json
-                import torch # type: ignore
-                os.makedirs("models/saved", exist_ok=True)
-                # Save model weights
-                torch.save(model.state_dict(), f"models/saved/{model_save_name}.pth")
-                # Save class list
-                with open(f"models/saved/{model_save_name}_classes.json", "w") as f:
-                    json.dump({"classes": classes, "arch": model_arch}, f)
-            
-            st.success("Training completed and model saved successfully!")
-            
-            st.subheader("Training Loss Curve")
-            import pandas as pd
-            chart_data = pd.DataFrame({
-                "Train Loss": history["train_loss"],
-                "Val Loss": history["val_loss"]
-            })
-            st.line_chart(chart_data)
-            
-            from src.utils.metrics import get_predictions, plot_confusion_matrix, generate_classification_report # type: ignore
-            
-            with st.spinner("Generating validation metrics using Scikit-learn & Seaborn..."):
-                y_true, y_pred = get_predictions(model, val_loader, device_opt)
-                
-                col_m1, col_m2 = st.columns([1.5, 1])
-                with col_m1:
-                    st.subheader("Validation Confusion Matrix")
-                    fig = plot_confusion_matrix(y_true, y_pred, classes)
-                    st.pyplot(fig)
-                
-                with col_m2:
-                    st.subheader("Classification Report")
-                    report = generate_classification_report(y_true, y_pred, classes)
-                    st.text(report)
-            
-            with st.expander("Raw History Data"):
-                st.json(history)
-            
-        except Exception as e:
-            st.error(f"Training failed: {e}")
+        st.header("Data Ingestion & Augmentation")
+        st.markdown("Point the pipeline to a local directory structured with `train` and `val` folders containing class subfolders.")
+
+        dataset_choice = st.selectbox("Select Target Dataset", ["Brain Scans (Medical)", "E-Commerce Fashion (Retail)"])
+        if dataset_choice == "Brain Scans (Medical)":
+            data_dir = os.path.join(BASE_DIR, "data", "raw", "brain_scans")
+        else:
+            data_dir = os.path.join(BASE_DIR, "data", "raw", "ecommerce")
+
+        st.info(f"Target Directory: `{data_dir}`")
+
+        if st.button("Load Dataset & Visualize Batch"):
+            from src.image_classifier.data_loading import get_dataloaders  # type: ignore
+            from src.image_classifier.data_loading.transforms import get_inverse_transforms  # type: ignore
+            import torch  # type: ignore
+
+            try:
+                with st.spinner("Setting up PyTorch DataLoaders..."):
+                    train_loader, val_loader, classes = get_dataloaders(data_dir, batch_size=8, num_workers=0)
+                    st.success(f"Successfully loaded dataset with {len(classes)} classes: {', '.join(classes)}")
+
+                    # Fetch a single batch
+                    images, labels = next(iter(train_loader))
+
+                    st.subheader("Training Batch Preview (Augmented)")
+                    inv_trans = get_inverse_transforms()
+
+                    cols = st.columns(4)
+                    for idx, (img_tensor, label_idx) in enumerate(zip(images[:8], labels[:8])):
+                        col = cols[idx % 4]
+                        try:
+                            # Un-normalize the tensor for viewing
+                            display_img = inv_trans(img_tensor)
+                            col.image(display_img, caption=f"Class: {classes[label_idx]}", use_container_width=True)
+                        except Exception as e:
+                            col.error(f"Error viewing image: {e}")
+
+            except FileNotFoundError as e:
+                st.error(f"Directory Error: {e}. Please ensure the path exists and contains 'train' and 'val' subdirectories.")
+            except Exception as e:
+                st.error(f"Failed to load dataset: {e}")
+
+    with tab2:
+        st.header("Model Training Pipeline")
+        st.markdown("Kick off a training run using Transfer Learning on a pre-trained ResNet50.")
+
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
+            num_epochs = st.number_input("Number of Epochs", min_value=1, max_value=50, value=1)
+            learning_rate = st.selectbox("Learning Rate", [0.001, 0.0001, 0.00001], index=0)
+            patience = st.number_input("Early Stopping Patience", min_value=1, max_value=10, value=3)
+
+        with col_t2:
+            device_opt = st.radio("Compute Device", ["cpu", "cuda"])
+            model_arch = st.selectbox("Model Architecture", ["ResNet50", "EfficientNet-B0", "VGG16"], index=0)
+            loss_fn = st.selectbox("Loss Function", ["cross_entropy", "focal_loss"], index=0)
+            model_save_name = st.text_input("Model Save Name", value="ecommerce_wearables")
+
+        if st.button("🚀 Start Training Run"):
+            from src.image_classifier.models.resnet import build_resnet50  # type: ignore
+            from src.image_classifier.models.efficientnet import build_efficientnet # type: ignore
+            from src.image_classifier.training.engine import train_model  # type: ignore
+            from src.image_classifier.data_loading import get_dataloaders  # type: ignore
+
+            try:
+                with st.spinner("Preparing model and dataloaders..."):
+                    train_loader, val_loader, classes = get_dataloaders(data_dir, batch_size=8, num_workers=0)
+
+                    if model_arch == "ResNet50":
+                        model = build_resnet50(num_classes=len(classes), pretrained=True, freeze_backbone=True)
+                    elif model_arch == "VGG16":
+                        from src.image_classifier.models.vgg import build_vgg16 # type: ignore
+                        model = build_vgg16(num_classes=len(classes), pretrained=True, freeze_backbone=True)
+                    else:
+                        model = build_efficientnet(num_classes=len(classes), pretrained=True, freeze_backbone=True)
+
+                st.info(f"Starting training on {device_opt} for {num_epochs} epochs...")
+
+                progress_bar = st.progress(0, text="Initializing training...")
+                status_text = st.empty()
+
+                def update_ui(epoch, total_epochs, t_loss, v_loss, duration):
+                    progress_bar.progress(epoch / total_epochs, text=f"Epoch {epoch}/{total_epochs} Complete")
+                    status_text.markdown(f"**Epoch {epoch} Metrics:** Train Loss: `{t_loss:.4f}` | Val Loss: `{v_loss:.4f}` | Time: `{duration:.1f}s`")
+
+                with st.spinner("Training in progress..."):
+                    history = train_model(
+                        model=model,
+                        train_loader=train_loader,
+                        val_loader=val_loader,
+                        num_epochs=num_epochs,
+                        device=device_opt,
+                        learning_rate=learning_rate,
+                        patience=patience,
+                        loss_function=loss_fn,
+                        epoch_callback=update_ui
+                    )
+
+                with st.spinner("Saving model weights..."):
+                    import os, json
+                    import torch # type: ignore
+                    save_dir = os.path.join(BASE_DIR, "models", "saved")
+                    os.makedirs(save_dir, exist_ok=True)
+                    # Save model weights
+                    torch.save(model.state_dict(), os.path.join(save_dir, f"{model_save_name}.pth"))
+                    # Save class list
+                    with open(os.path.join(save_dir, f"{model_save_name}_classes.json"), "w") as f:
+                        json.dump({"classes": classes, "arch": model_arch}, f)
+
+                st.success("Training completed and model saved successfully!")
+
+                st.subheader("Training Loss Curve")
+                import pandas as pd
+                chart_data = pd.DataFrame({
+                    "Train Loss": history["train_loss"],
+                    "Val Loss": history["val_loss"]
+                })
+                st.line_chart(chart_data)
+
+                from src.utils.metrics import get_predictions, plot_confusion_matrix, generate_classification_report # type: ignore
+
+                with st.spinner("Generating validation metrics using Scikit-learn & Seaborn..."):
+                    y_true, y_pred = get_predictions(model, val_loader, device_opt)
+
+                    col_m1, col_m2 = st.columns([1.5, 1])
+                    with col_m1:
+                        st.subheader("Validation Confusion Matrix")
+                        fig = plot_confusion_matrix(y_true, y_pred, classes)
+                        st.pyplot(fig)
+
+                    with col_m2:
+                        st.subheader("Classification Report")
+                        report = generate_classification_report(y_true, y_pred, classes)
+                        st.text(report)
+
+                with st.expander("Raw History Data"):
+                    st.json(history)
+
+            except Exception as e:
+                st.error(f"Training failed: {e}")
 
 # Initialize monitoring session state
 if 'total_inferences' not in st.session_state:
     st.session_state.total_inferences = 0
 
-with tab3:
+with inference_container:
     col1, col2 = st.columns([1, 2])
     with col1:
         st.header("Upload Data")
@@ -189,8 +198,9 @@ with tab3:
         
         # Discover saved models
         import os
-        os.makedirs("models/saved", exist_ok=True)
-        saved_models = [f.replace(".pth", "") for f in os.listdir("models/saved") if f.endswith(".pth")]
+        save_dir = os.path.join(BASE_DIR, "models", "saved")
+        os.makedirs(save_dir, exist_ok=True)
+        saved_models = [f.replace(".pth", "") for f in os.listdir(save_dir) if f.endswith(".pth")]
         model_choice = st.selectbox("Select Model for Inference", ["Base ImageNet"] + saved_models)
         
         if uploaded_file is not None:
@@ -205,8 +215,10 @@ with tab3:
                     val_transforms = get_validation_transforms()
                     
                     # Check if custom trained model exists
-                    if model_choice != "Base ImageNet" and os.path.exists(f"models/saved/{model_choice}.pth") and os.path.exists(f"models/saved/{model_choice}_classes.json"):
-                        with open(f"models/saved/{model_choice}_classes.json", "r") as f:
+                    model_path = os.path.join(save_dir, f"{model_choice}.pth")
+                    class_path = os.path.join(save_dir, f"{model_choice}_classes.json")
+                    if model_choice != "Base ImageNet" and os.path.exists(model_path) and os.path.exists(class_path):
+                        with open(class_path, "r") as f:
                             saved_data = json.load(f)
                             
                         # Handle new dictionary format or old list format
@@ -226,7 +238,7 @@ with tab3:
                             from src.image_classifier.models.efficientnet import build_efficientnet # type: ignore
                             model = build_efficientnet(num_classes=len(custom_classes), pretrained=False, freeze_backbone=False)
                             
-                        model.load_state_dict(torch.load(f"models/saved/{model_choice}.pth", map_location="cpu", weights_only=True))
+                        model.load_state_dict(torch.load(model_path, map_location="cpu", weights_only=True))
                         classes = custom_classes
                         st.info(f"Using custom trained {arch} model: {model_choice}!")
                     else:
