@@ -6,7 +6,7 @@ import io
 def get_imagenet_classes():
     """Fallback utility to load standard ImageNet class names if needed."""
     try:
-        from torchvision.models import ResNet50_Weights
+        from torchvision.models import ResNet50_Weights  # type: ignore
         return ResNet50_Weights.DEFAULT.meta["categories"]
     except Exception:
         return [f"Class_{i}" for i in range(1000)]

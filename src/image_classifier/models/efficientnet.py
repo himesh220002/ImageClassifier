@@ -1,6 +1,7 @@
 import torch # pyright: ignore
+# pyrefly: ignore [missing-import]
 import torch.nn as nn
-from torchvision import models
+from torchvision import models  # type: ignore
 
 def build_efficientnet(num_classes: int, pretrained: bool = True, freeze_backbone: bool = True) -> nn.Module:
     """
